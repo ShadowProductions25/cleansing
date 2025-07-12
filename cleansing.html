@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cleansing Mini-Game</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #1e1e1e;
+      color: white;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 50px);
+      grid-gap: 5px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .cell {
+      width: 50px;
+      height: 50px;
+      background-color: #333;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .active {
+      animation: pulse 0.5s ease-in-out;
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+  <h1>Cleansing Mini-Game</h1>
+  <label for="dragonType">Choose your dragon type:</label>
+  <select id="dragonType">
+    <option value="fire">Fire</option>
+    <option value="emerald">Emerald</option>
+    <option value="storm">Storm</option>
+    <option value="mystic">Mystic</option>
+    <option value="ice">Ice</option>
+  </select>
+  <br><br>
+  <label for="duration">Game duration (seconds):</label>
+  <input type="number" id="duration" value="30" min="5" max="120">
+  <p>Score: <span id="score">0</span></p>
+  <p>Time Left: <span id="timer">0</span> seconds</p>
+  <button onclick="startGame()">Start</button>
+  <div class="grid" id="grid"></div>
+
+  <script>
+    const colors = ["red", "green", "gray", "purple", "lightblue"];
+    const typeMap = {
+      fire: "red",
+      emerald: "green",
+      storm: "gray",
+      mystic: "purple",
+      ice: "lightblue",
+    };
+
+    const grid = document.getElementById("grid");
+    const scoreDisplay = document.getElementById("score");
+    const dragonType = document.getElementById("dragonType");
+    const timerDisplay = document.getElementById("timer");
+    const durationInput = document.getElementById("duration");
+    let score = 0;
+    let timeLeft = 0;
+    let gameInterval = null;
+    let countdownInterval = null;
+    let gameRunning = false;
+
+    for (let i = 0; i < 144; i++) {
+      const cell = document.createElement("div");
+      cell.classList.add("cell");
+      grid.appendChild(cell);
+    }
+
+    const cells = document.querySelectorAll(".cell");
+
+    function activateCell() {
+      if (!gameRunning) return;
+      const randomIndex = Math.floor(Math.random() * cells.length);
+      const randomColor = colors[Math.floor(Math.random() * colors.length)];
+      const cell = cells[randomIndex];
+      cell.style.backgroundColor = randomColor;
+      cell.classList.add("active");
+
+      let clicked = false;
+      const timeout = setTimeout(() => {
+        if (!clicked) {
+          score -= 1;
+          updateScore();
+        }
+        resetCell(cell);
+      }, 600);
+
+      cell.onclick = () => {
+        if (!clicked && gameRunning) {
+          clicked = true;
+          if (randomColor === typeMap[dragonType.value]) {
+            score -= 2; // Penalty for clicking your own type
+          } else {
+            score += 1; // Reward for clicking other types
+          }
+          updateScore();
+          clearTimeout(timeout);
+          resetCell(cell);
+        }
+      };
+    }
+
+    function resetCell(cell) {
+      cell.style.backgroundColor = "#333";
+      cell.classList.remove("active");
+      cell.onclick = null;
+    }
+
+    function updateScore() {
+      scoreDisplay.textContent = score;
+    }
+
+    function startGame() {
+      if (gameRunning) return;
+      score = 0;
+      timeLeft = parseInt(durationInput.value) || 30;
+      gameRunning = true;
+      updateScore();
+      timerDisplay.textContent = timeLeft;
+
+      let countdown = 3;
+      timerDisplay.textContent = "Starting in: " + countdown;
+      const startCountdown = setInterval(() => {
+        countdown--;
+        timerDisplay.textContent = "Starting in: " + countdown;
+        if (countdown <= 0) {
+          clearInterval(startCountdown);
+          timerDisplay.textContent = timeLeft;
+
+          gameInterval = setInterval(activateCell, 1000);
+          countdownInterval = setInterval(() => {
+            timeLeft--;
+            timerDisplay.textContent = timeLeft;
+            if (timeLeft <= 0) {
+              clearInterval(gameInterval);
+              clearInterval(countdownInterval);
+              gameRunning = false;
+              alert("Time's up! Final Score: " + score);
+            }
+          }, 1000);
+        }
+      }, 1000);
+    }
+  </script>
+</body>
+</html>
